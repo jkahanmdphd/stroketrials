@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Stroke Trials — Outcome Projector</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#fff;--bg2:#f5f5f3;--bg3:#eeece6;
+  --t1:#1a1a1a;--t2:#666660;--t3:#999994;
+  --bd:rgba(0,0,0,0.12);--bd2:rgba(0,0,0,0.22);
+}
+@media(prefers-color-scheme:dark){:root{
+  --bg:#1c1c1a;--bg2:#272725;--bg3:#2f2f2c;
+  --t1:#f0ede6;--t2:#a8a59e;--t3:#6e6b65;
+  --bd:rgba(255,255,255,0.10);--bd2:rgba(255,255,255,0.20);
+}}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;background:var(--bg3);color:var(--t1);min-height:100vh;padding:1.5rem 1rem}
+.page{max-width:860px;margin:0 auto}
+h1{font-size:18px;font-weight:500;margin-bottom:4px}
+.subtitle{font-size:12px;color:var(--t2);margin-bottom:1.2rem;line-height:1.5}
+.select-row{display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap}
+.select-label{font-size:12px;color:var(--t2);white-space:nowrap}
+select#trialSelect{font-size:13px;padding:7px 10px;border:0.5px solid var(--bd2);border-radius:8px;background:var(--bg);color:var(--t1);min-width:280px;cursor:pointer}
+.info-card{background:var(--bg);border:0.5px solid var(--bd);border-radius:10px;padding:.85rem 1rem;margin-bottom:10px}
+.info-name{font-size:14px;font-weight:500;margin-bottom:3px}
+.info-meta{font-size:11px;color:var(--t2);line-height:1.6}
+.flag-card{background:#EEF0FE;border:0.5px solid #534AB7;border-radius:10px;padding:.8rem 1rem;margin-bottom:10px;font-size:11px;line-height:1.6;color:#26215C}
+@media(prefers-color-scheme:dark){.flag-card{background:#1E1B4B;border-color:#AFA9EC;color:#CECBF6}}
+.flag-title{font-weight:500;margin-bottom:3px}
+.chart-card{background:var(--bg);border:0.5px solid var(--bd);border-radius:12px;padding:1rem 1.1rem;margin-bottom:10px}
+.chart-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;flex-wrap:wrap;gap:8px}
+.chart-title-text{font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:.07em;color:var(--t2)}
+.legend{display:flex;gap:16px;flex-wrap:wrap;align-items:center}
+.leg-item{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--t2)}
+.leg-swatch{width:12px;height:12px;border-radius:2px;flex-shrink:0;border:1.5px solid transparent}
+.canvas-wrap{position:relative;width:100%;height:340px}
+.threshold-section{margin-top:16px}
+.threshold-label-row{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:7px}
+.threshold-prompt{font-size:12px;color:var(--t2)}
+.threshold-val{font-size:12px;font-weight:500;color:var(--t1)}
+input[type=range]#threshold{width:100%;accent-color:#378ADD}
+.slider-hint{display:flex;justify-content:space-between;font-size:10px;color:var(--t3);margin-top:2px;padding:0 1px}
+.outcome-cards{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
+.outcome-card{border-radius:8px;padding:10px 12px}
+.oc-header{font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px}
+.oc-def{font-size:11px;margin-bottom:8px;line-height:1.4;opacity:.8}
+.oc-row{display:flex;justify-content:space-between;align-items:baseline;font-size:11px;gap:6px;margin-bottom:3px}
+.oc-arm{flex:1;opacity:.8}
+.oc-pct{font-size:17px;font-weight:500;white-space:nowrap}
+.oc-pct.dim{font-size:14px;opacity:.65}
+.oc-diff{font-size:10px;margin-top:6px;padding-top:6px;border-top:0.5px solid rgba(128,128,128,0.2);opacity:.75}
+.divider{height:0.5px;background:var(--bd);margin:12px 0}
+.caveat{font-size:11px;color:var(--t3);line-height:1.6;font-style:italic}
+.footer{margin-top:1.2rem;border-top:0.5px solid var(--bd);padding-top:.9rem}
+.footer h3{font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:.06em;color:var(--t2);margin-top:.9rem;margin-bottom:5px}
+.footer h3:first-child{margin-top:0}
+.footer table{width:100%;border-collapse:collapse}
+.footer td{font-size:10px;color:var(--t3);padding:3px 6px 3px 0;border-bottom:0.5px solid var(--bd);vertical-align:top;line-height:1.6}
+.footer td:first-child{font-weight:500;color:var(--t2);width:130px;white-space:nowrap}
+.footer tr:last-child td{border-bottom:none}
+.footer .disclaimer{font-size:11px;color:var(--t3);line-height:1.7;margin-top:.9rem;padding-top:.9rem;border-top:0.5px solid var(--bd);font-style:italic}
+</style>
+</head>
+<body>
+<div class="page">
+
+<h1>Stroke trials — outcome projector</h1>
+<p class="subtitle">Published mRS distributions from landmark trials. Select a trial, then use the threshold slider to define what outcome is acceptable for your patient. Solid bars = intervention arm. Faded bars = control arm.</p>
+
+<div class="select-row">
+  <span class="select-label">Trial:</span>
+  <select id="trialSelect" onchange="selectTrial(this.value)"></select>
+</div>
+
+<div id="infoArea"></div>
+
+<div class="chart-card">
+  <div class="chart-top">
+    <div class="chart-title-text" id="chartTitle"></div>
+    <div class="legend" id="legend"></div>
+  </div>
+  <div class="canvas-wrap"><canvas id="chart" role="img" aria-label="Grouped bar chart of mRS distribution, x-axis from death on left to mRS 0 on right"></canvas></div>
+
+  <div class="threshold-section">
+    <div class="threshold-label-row">
+      <span class="threshold-prompt">Acceptable outcome threshold — mRS at or better than:</span>
+      <span class="threshold-val" id="thresholdVal">mRS 2</span>
+    </div>
+    <input type="range" id="threshold" min="0" max="5" step="1" value="3" oninput="onThreshold()">
+    <div class="slider-hint"><span>mRS 5</span><span>mRS 4</span><span>mRS 3</span><span>mRS 2</span><span>mRS 1</span><span>mRS 0</span></div>
+  </div>
+
+  <div class="outcome-cards" id="outcomeCards"></div>
+  <div class="divider"></div>
+  <p class="caveat" id="caveat"></p>
+</div>
+
+<div class="footer">
+  <h3>Modified Rankin Scale</h3>
+  <table>
+    <tr><td>mRS 0</td><td>No symptoms</td></tr>
+    <tr><td>mRS 1</td><td>No significant disability — able to perform all usual activities despite minor symptoms</td></tr>
+    <tr><td>mRS 2</td><td>Slight disability — unable to perform all previous activities but independent in daily living</td></tr>
+    <tr><td>mRS 3</td><td>Moderate disability — requires some help but able to walk without assistance</td></tr>
+    <tr><td>mRS 4</td><td>Moderately severe — unable to walk or attend to own bodily needs without assistance</td></tr>
+    <tr><td>mRS 5</td><td>Severe disability — bedridden, incontinent, requires constant nursing care</td></tr>
+    <tr><td>Death</td><td>mRS 6</td></tr>
+  </table>
+
+  <h3>Trial sources</h3>
+  <table>
+    <tr><td>MR CLEAN</td><td>Berkhemer OA, et al. A randomized trial of intraarterial treatment for acute ischemic stroke. <em>N Engl J Med.</em> 2015;372:11–20. doi:10.1056/NEJMoa1411587</td></tr>
+    <tr><td>ESCAPE</td><td>Goyal M, et al. Randomized assessment of rapid endovascular treatment of ischemic stroke. <em>N Engl J Med.</em> 2015;372:1019–1030. doi:10.1056/NEJMoa1414905</td></tr>
+    <tr><td>SWIFT PRIME</td><td>Saver JL, et al. Stent-retriever thrombectomy after intravenous t-PA vs. t-PA alone in stroke. <em>N Engl J Med.</em> 2015;372:2285–2295. doi:10.1056/NEJMoa1415061</td></tr>
+    <tr><td>DAWN</td><td>Nogueira RG, et al. Thrombectomy 6 to 24 hours after stroke with a mismatch between deficit and infarct. <em>N Engl J Med.</em> 2018;378:11–21. doi:10.1056/NEJMoa1706442</td></tr>
+    <tr><td>DEFUSE-3</td><td>Albers GW, et al. Thrombectomy for stroke at 6 to 16 hours with selection by perfusion imaging. <em>N Engl J Med.</em> 2018;378:708–718. doi:10.1056/NEJMoa1713973</td></tr>
+    <tr><td>DESTINY II</td><td>Jüttler E, et al. Hemicraniectomy in older patients with extensive middle-cerebral-artery stroke. <em>N Engl J Med.</em> 2014;370:1091–1100. doi:10.1056/NEJMoa1311367</td></tr>
+    <tr><td>DECIMAL/DESTINY/<br>HAMLET pooled</td><td>Vahedi K, et al. Early decompressive surgery in malignant infarction of the middle cerebral artery: a pooled analysis. <em>Lancet Neurol.</em> 2007;6:215–222. doi:10.1016/S1474-4422(07)70036-4</td></tr>
+  </table>
+
+  <div class="disclaimer">
+    This tool is a communication scaffold for use in clinical discussions. It is not a validated prognostic calculator. Distributions are reproduced from published trial figures and reflect the characteristics of enrolled populations, which differ across trials. Values should not be applied to individual patients without consideration of eligibility criteria, patient-specific factors, and the limitations of each trial. The acceptable outcome threshold reflects a clinical judgment and is not a validated definition.
+  </div>
+</div>
+
+</div>
+
+<script>
+const isDark=()=>matchMedia('(prefers-color-scheme:dark)').matches;
+const MRS_SHORT=['Death','mRS 5','mRS 4','mRS 3','mRS 2','mRS 1','mRS 0'];
+const MRS_FULL=['Death (mRS 6)','mRS 5 — bedridden','mRS 4 — unable to walk','mRS 3 — walks unassisted','mRS 2 — slight disability, independent','mRS 1 — no significant disability','mRS 0 — no symptoms'];
+const MRS_DEFS=['No symptoms','No significant disability','Slight disability — independent','Moderate disability — walks unassisted','Moderately severe — unable to walk','Severe disability — bedridden'];
+
+// dist: [death, mRS5, mRS4, mRS3, mRS2, mRS1, mRS0]
+const TRIALS=[
+  { section:'Thrombectomy — early window (0–6h)',
+    id:'mrclean', label:'MR CLEAN (0–6h)',
+    citation:'Berkhemer et al. NEJM 2015', timepoint:'90 days',
+    population:'LVO anterior circulation, NIHSS ≥2, onset within 6h, no upper age limit. Both arms received IV tPA if eligible (87–91%).',
+    flag:null,
+    int:{label:'Intervention (EVT)',n:233,dist:[21,6,22,18,21,9,3]},
+    ctrl:{label:'Control (usual care)',n:267,dist:[22,12,30,16,13,6,1]},
+    caveat:'Values from Figure 1, Berkhemer et al. NEJM 2015. Control mRS 0=1% inferred as unlabelled remainder to 100%.',
+  },
+  { section:'Thrombectomy — early window (0–6h)',
+    id:'escape', label:'ESCAPE (0–12h)',
+    citation:'Goyal et al. NEJM 2015', timepoint:'90 days',
+    population:'LVO anterior circulation, NIHSS ≥5, onset within 12h, good collateral circulation on CT perfusion.',
+    flag:null,
+    int:{label:'Intervention (EVT)',n:164,dist:[10,7,13,16,18,21,15]},
+    ctrl:{label:'Control (usual care)',n:147,dist:[19,12,24,15,12,10,7]},
+    caveat:'Values from Figure 2A, Goyal et al. NEJM 2015. All 7 segments labelled; both arms sum to 100%.',
+  },
+  { section:'Thrombectomy — early window (0–6h)',
+    id:'swiftprime', label:'SWIFT PRIME (0–6h)',
+    citation:'Saver et al. NEJM 2015', timepoint:'90 days',
+    population:'LVO anterior circulation, NIHSS 8–29, onset within 6h, IV tPA eligible, CT perfusion mismatch required.',
+    flag:null,
+    int:{label:'Stent retriever + IV tPA',n:98,dist:[9,3,15,12,17,26,17]},
+    ctrl:{label:'IV tPA alone',n:93,dist:[12,14,22,17,16,11,9]},
+    caveat:'Figure combined mRS 5+6. Stent retriever: combined=12%, death=9% (reported separately) → mRS 5=3%. IV tPA: combined=26%, death=12% → mRS 5=14%. Minor rounding discrepancies noted.',
+  },
+  { section:'Thrombectomy — late window (6–24h)',
+    id:'dawn', label:'DAWN (6–24h)',
+    citation:'Nogueira et al. NEJM 2018', timepoint:'90 days',
+    population:'LVO (ICA or M1), 6–24h from last known well, clinical-imaging mismatch on perfusion imaging.',
+    flag:null,
+    int:{label:'Thrombectomy',n:107,dist:[19,6,13,13,17,22,9]},
+    ctrl:{label:'Standard care',n:99,dist:[18,18,34,16,4,5,4]},
+    caveat:'Figure combined mRS 5+6. Thrombectomy: combined=25%, death=19% (reported) → mRS 5=6%. Control: combined=36%, death=18% → mRS 5=18%.',
+  },
+  { section:'Thrombectomy — late window (6–24h)',
+    id:'defuse3', label:'DEFUSE-3 (6–16h)',
+    citation:'Albers et al. NEJM 2018', timepoint:'90 days',
+    population:'LVO anterior circulation, 6–16h from last known well, perfusion imaging mismatch (RAPID software).',
+    flag:null,
+    int:{label:'Endovascular therapy',n:92,dist:[14,8,18,15,18,16,10]},
+    ctrl:{label:'Medical therapy',n:90,dist:[26,16,27,16,4,4,8]},
+    caveat:'Values from figure, Albers et al. NEJM 2018. Both arms have minor 1% rounding discrepancies.',
+  },
+  { section:'Hemicraniectomy — malignant MCA infarction',
+    id:'pooled', label:'DECIMAL / DESTINY / HAMLET (pooled, all ages)',
+    citation:'Vahedi et al. Lancet Neurol 2007', timepoint:'12 months',
+    population:'Malignant MCA infarction, pooled analysis of three RCTs. Age ≤55 (DECIMAL, HAMLET) or ≤60 (DESTINY). mRS 0–1 not achieved in either arm.',
+    flag:null,
+    int:{label:'Surgery (hemicraniectomy)',n:51,dist:[22,4,31,29,14,0,0]},
+    ctrl:{label:'Conservative treatment',n:42,dist:[71,5,2,19,2,0,0]},
+    caveat:'Values from figure, Vahedi et al. Lancet Neurol 2007. Both arms sum to 99%; 1% rounding gap noted. mRS 0–1 not observed in either arm.',
+  },
+  { section:'Hemicraniectomy — malignant MCA infarction',
+    id:'destinyii', label:'DESTINY II — age >60',
+    citation:'Jüttler et al. NEJM 2014', timepoint:'12 months',
+    population:'Malignant MCA infarction, age >60 years only. mRS 0–2 not achieved in either arm.',
+    flag:'DESTINY II enrolled patients aged >60 years only. mRS 0–2 was not achieved in either arm. The high mortality in the conservative arm (76%) reflects the natural history of malignant MCA infarction in this age group, noting that withdrawal of life-sustaining treatment was permitted per protocol.',
+    int:{label:'Hemicraniectomy',n:47,dist:[43,19,32,6,0,0,0]},
+    ctrl:{label:'Conservative treatment',n:62,dist:[76,8,11,5,0,0,0]},
+    caveat:'Values from Figure 2B (12-month outcomes), Jüttler et al. NEJM 2014. mRS 0–2 not observed in either arm.',
+  },
+];
+
+const ACC_H='rgba(15,110,86,', ACC_B_LT='#0F6E56', ACC_B_DK='#5DCAA5';
+const UNA_H='rgba(162,45,45,', UNA_B_LT='#A32D2D', UNA_B_DK='#E24B4A';
+const INT_ALPHA=0.22, CTRL_ALPHA=0.09;
+const CTRL_BORDER_ALPHA=0.45;
+
+function makeColor(isAcc,isInt,dk){
+  const h=isAcc?ACC_H:UNA_H;
+  const alpha=isInt?INT_ALPHA:CTRL_ALPHA;
+  const border=isAcc?(dk?ACC_B_DK:ACC_B_LT):(dk?UNA_B_DK:UNA_B_LT);
+  return{bg:h+alpha+')',border};
+}
+
+function hexToRgba(hex,alpha){
+  const r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);
+  return`rgba(${r},${g},${b},${alpha})`;
+}
+
+let currentId='mrclean', threshold=2, chart=null;
+function getTrial(){return TRIALS.find(t=>t.id===currentId);}
+
+function selectTrial(id){currentId=id;buildInfo();render();}
+
+function buildDropdown(){
+  const sel=document.getElementById('trialSelect');
+  const sections=[...new Set(TRIALS.map(t=>t.section))];
+  sections.forEach(sec=>{
+    const og=document.createElement('optgroup');
+    og.label=sec;
+    TRIALS.filter(t=>t.section===sec).forEach(t=>{
+      const opt=document.createElement('option');
+      opt.value=t.id;opt.textContent=t.label;
+      if(t.id===currentId)opt.selected=true;
+      og.appendChild(opt);
+    });
+    sel.appendChild(og);
+  });
+}
+
+function buildInfo(){
+  const t=getTrial();
+  let html=`<div class="info-card">
+    <div class="info-name">${t.label} <span style="font-weight:400;font-size:12px;color:var(--t2)">${t.citation}</span></div>
+    <div class="info-meta">${t.population} &nbsp;·&nbsp; Outcome at <strong>${t.timepoint}</strong></div>
+  </div>`;
+  if(t.flag){
+    html+=`<div class="flag-card"><div class="flag-title">⚑ Population note</div>${t.flag}</div>`;
+  }
+  document.getElementById('infoArea').innerHTML=html;
+}
+
+function onThreshold(){
+  threshold=5-parseInt(document.getElementById('threshold').value);
+  document.getElementById('thresholdVal').textContent='mRS '+threshold;
+  buildOutcomeCards();updateChartColors();
+}
+
+function acceptableIdxs(){return Array.from({length:threshold+1},(_,i)=>6-i);}
+function sumIdxs(dist,idxs){return idxs.reduce((s,i)=>s+(dist[i]||0),0);}
+
+function buildOutcomeCards(){
+  const dk=isDark(),t=getTrial();
+  const accIdxs=acceptableIdxs(),unaccIdxs=[0,1,2,3,4,5,6].filter(i=>!accIdxs.includes(i));
+  const CARD_DEFS=[
+    {title:'Unacceptable outcome',
+     def:threshold<5?'mRS '+(threshold+1)+'–6 — worse than '+MRS_DEFS[threshold].toLowerCase():'Death only',
+     idxs:unaccIdxs,
+     bg_lt:'#FCEBEB',txt_lt:'#791F1F',border_lt:'#A32D2D',
+     bg_dk:'#501313',txt_dk:'#F7C1C1',border_dk:'#E24B4A'},
+    {title:'Acceptable outcome',
+     def:'mRS 0–'+threshold+' — '+MRS_DEFS[threshold]+' or better',
+     idxs:accIdxs,
+     bg_lt:'#E1F5EE',txt_lt:'#085041',border_lt:'#0F6E56',
+     bg_dk:'#04342C',txt_dk:'#9FE1CB',border_dk:'#1D9E75'},
+  ];
+  const container=document.getElementById('outcomeCards');
+  container.innerHTML='';
+  CARD_DEFS.forEach(card=>{
+    const bg=dk?card.bg_dk:card.bg_lt,txt=dk?card.txt_dk:card.txt_lt,border=dk?card.border_dk:card.border_lt;
+    const intPct=Math.round(sumIdxs(t.int.dist,card.idxs));
+    const ctrlPct=Math.round(sumIdxs(t.ctrl.dist,card.idxs));
+    const diff=intPct-ctrlPct;
+    const sign=diff>0?'+':'';
+    const diffLbl=diff>0?`Intervention ${sign}${diff}pp more likely`:diff<0?`Intervention ${diff}pp less likely`:'No difference between arms';
+    const el=document.createElement('div');
+    el.className='outcome-card';el.style.background=bg;el.style.border=`0.5px solid ${border}`;
+    el.innerHTML=`
+      <div class="oc-header" style="color:${txt}">${card.title}</div>
+      <div class="oc-def" style="color:${txt}">${card.def}</div>
+      <div class="oc-row">
+        <span class="oc-arm" style="color:${txt}">${t.int.label} <span style="opacity:.6">n=${t.int.n}</span></span>
+        <span class="oc-pct" style="color:${txt}">${intPct}%</span>
+      </div>
+      <div class="oc-row">
+        <span class="oc-arm" style="color:${txt};opacity:.65">${t.ctrl.label} <span style="opacity:.6">n=${t.ctrl.n}</span></span>
+        <span class="oc-pct dim" style="color:${txt}">${ctrlPct}%</span>
+      </div>
+      <div class="oc-diff" style="color:${txt}">${diffLbl}</div>`;
+    container.appendChild(el);
+  });
+}
+
+function makeDatasets(accIdxs,dk){
+  const t=getTrial();
+  return[
+    {label:t.int.label,data:t.int.dist,
+     backgroundColor:t.int.dist.map((_,i)=>makeColor(accIdxs.includes(i),true,dk).bg),
+     borderColor:t.int.dist.map((_,i)=>makeColor(accIdxs.includes(i),true,dk).border),
+     borderWidth:1.5,borderRadius:3},
+    {label:t.ctrl.label,data:t.ctrl.dist,
+     backgroundColor:t.ctrl.dist.map((_,i)=>makeColor(accIdxs.includes(i),false,dk).bg),
+     borderColor:t.ctrl.dist.map((_,i)=>hexToRgba(makeColor(accIdxs.includes(i),false,dk).border,CTRL_BORDER_ALPHA)),
+     borderWidth:1,borderRadius:3},
+  ];
+}
+
+function updateChartColors(){
+  if(!chart)return;
+  const accIdxs=acceptableIdxs(),dk=isDark();
+  chart.data.datasets.forEach((ds,di)=>{
+    const isInt=di===0;
+    ds.backgroundColor=ds.data.map((_,i)=>makeColor(accIdxs.includes(i),isInt,dk).bg);
+    ds.borderColor=ds.data.map((_,i)=>{
+      const c=makeColor(accIdxs.includes(i),isInt,dk);
+      return isInt?c.border:hexToRgba(c.border,CTRL_BORDER_ALPHA);
+    });
+    ds.borderWidth=isInt?1.5:1;
+  });
+  chart.update('none');
+}
+
+function buildLegend(){
+  const dk=isDark(),t=getTrial();
+  const accCol=dk?ACC_B_DK:ACC_B_LT;
+  document.getElementById('legend').innerHTML=`
+    <span class="leg-item">
+      <span class="leg-swatch" style="background:${accCol};border-color:${accCol}"></span>
+      <span>${t.int.label} <span style="color:var(--t3)">n=${t.int.n}</span></span>
+    </span>
+    <span class="leg-item" style="opacity:.55">
+      <span class="leg-swatch" style="background:${accCol};border-color:${accCol}"></span>
+      <span>${t.ctrl.label} <span style="color:var(--t3)">n=${t.ctrl.n}</span></span>
+    </span>`;
+}
+
+function render(){
+  const dk=isDark(),gc=dk?'rgba(255,255,255,0.07)':'rgba(0,0,0,0.05)',tc=dk?'rgba(255,255,255,0.45)':'rgba(0,0,0,0.45)';
+  const t=getTrial(),accIdxs=acceptableIdxs();
+  document.getElementById('threshold').value=5-threshold;
+  document.getElementById('thresholdVal').textContent='mRS '+threshold;
+  document.getElementById('chartTitle').textContent=`mRS at ${t.timepoint} — ${t.citation}`;
+  document.getElementById('caveat').textContent=t.caveat;
+  buildLegend();buildOutcomeCards();
+  const datasets=makeDatasets(accIdxs,dk);
+  if(chart){chart.destroy();chart=null;}
+  const ctx=document.getElementById('chart').getContext('2d');
+  chart=new Chart(ctx,{type:'bar',data:{labels:MRS_SHORT,datasets},options:{
+    responsive:true,maintainAspectRatio:false,animation:{duration:180},
+    plugins:{legend:{display:false},tooltip:{callbacks:{
+      title:items=>MRS_FULL[items[0].dataIndex],
+      label:item=>`${item.dataset.label}: ${item.raw}%`,
+    }}},
+    scales:{
+      x:{grid:{color:gc},ticks:{color:tc,font:{size:11},autoSkip:false,maxRotation:0}},
+      y:{min:0,max:45,grid:{color:gc},ticks:{color:tc,font:{size:11},callback:v=>v+'%'},
+         title:{display:true,text:'Patients (%)',color:tc,font:{size:11}}},
+    },
+  }});
+}
+
+buildDropdown();buildInfo();render();
+</script>
+</body>
+</html>
